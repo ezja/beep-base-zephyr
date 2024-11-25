@@ -1,0 +1,34 @@
+# Copyright (c) 2023 Nordic Semiconductor ASA
+# SPDX-License-Identifier: Apache-2.0
+
+config TLV320ADC3100
+    bool "TLV320ADC3100 Audio ADC"
+    default y
+    depends on DT_HAS_TI_TLV320ADC3100_ENABLED
+    select I2C
+    help
+      Enable driver for TI TLV320ADC3100 audio ADC.
+
+if TLV320ADC3100
+
+config TLV320ADC3100_INIT_PRIORITY
+    int "Init priority"
+    default 80
+    help
+      Device driver initialization priority.
+
+config TLV320ADC3100_LOG_LEVEL
+    int "Log level"
+    depends on LOG
+    default 1
+    range 0 4
+    help
+      Sets log level for TLV320ADC3100 driver.
+      Levels are:
+      - 0 OFF, do not write
+      - 1 ERROR, only write LOG_ERR
+      - 2 WARNING, write LOG_WRN in addition to previous level
+      - 3 INFO, write LOG_INF in addition to previous levels
+      - 4 DEBUG, write LOG_DBG in addition to previous levels
+
+endif # TLV320ADC3100

@@ -1,0 +1,58 @@
+# Copyright (c) 2023 Nordic Semiconductor ASA
+# SPDX-License-Identifier: Apache-2.0
+
+description: Texas Instruments TLV320ADC3100 Audio ADC
+
+compatible: "ti,tlv320adc3100"
+
+include: [i2c-device.yaml, base.yaml]
+
+properties:
+  reset-gpios:
+    type: phandle-array
+    required: false
+    description: |
+      GPIO connected to the chip's RESET pin. This pin is active-low.
+
+  mclk-freq:
+    type: int
+    required: true
+    default: 32000000
+    description: |
+      Master clock frequency in Hz. This should match the frequency provided
+      to the MCLK pin of the device.
+
+  channel-default:
+    type: int
+    required: false
+    default: 2
+    enum:
+      - 0  # IN3L
+      - 1  # IN2L
+      - 2  # IN2R (default)
+    description: |
+      Default input channel selection.
+      0: IN3L (Left channel of input 3)
+      1: IN2L (Left channel of input 2)
+      2: IN2R (Right channel of input 2)
+
+  volume-default:
+    type: int
+    required: false
+    default: 0
+    description: |
+      Default volume setting (-127 to 48 dB).
+
+  gain-default:
+    type: int
+    required: false
+    default: 0
+    description: |
+      Default gain setting (0-7).
+
+  min6db-default:
+    type: boolean
+    required: false
+    default: false
+    description: |
+      Enable -6dB mode by default.

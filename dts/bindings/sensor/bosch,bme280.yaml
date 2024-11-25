@@ -1,0 +1,119 @@
+# Copyright (c) 2023 Nordic Semiconductor ASA
+# SPDX-License-Identifier: Apache-2.0
+
+description: Bosch BME280 temperature, humidity, and pressure sensor
+
+compatible: "bosch,bme280"
+
+include: [i2c-device.yaml, base.yaml]
+
+properties:
+  temperature-oversampling:
+    type: int
+    required: false
+    default: 5
+    enum:
+      - 1 # x1
+      - 2 # x2
+      - 3 # x4
+      - 4 # x8
+      - 5 # x16
+    description: |
+      Temperature oversampling setting
+      1: x1
+      2: x2
+      3: x4
+      4: x8
+      5: x16
+
+  pressure-oversampling:
+    type: int
+    required: false
+    default: 5
+    enum:
+      - 1 # x1
+      - 2 # x2
+      - 3 # x4
+      - 4 # x8
+      - 5 # x16
+    description: |
+      Pressure oversampling setting
+      1: x1
+      2: x2
+      3: x4
+      4: x8
+      5: x16
+
+  humidity-oversampling:
+    type: int
+    required: false
+    default: 5
+    enum:
+      - 1 # x1
+      - 2 # x2
+      - 3 # x4
+      - 4 # x8
+      - 5 # x16
+    description: |
+      Humidity oversampling setting
+      1: x1
+      2: x2
+      3: x4
+      4: x8
+      5: x16
+
+  standby-time:
+    type: int
+    required: false
+    default: 5
+    enum:
+      - 0 # 0.5ms
+      - 1 # 62.5ms
+      - 2 # 125ms
+      - 3 # 250ms
+      - 4 # 500ms
+      - 5 # 1000ms
+      - 6 # 10ms
+      - 7 # 20ms
+    description: |
+      Standby time between measurements in normal mode
+      0: 0.5ms
+      1: 62.5ms
+      2: 125ms
+      3: 250ms
+      4: 500ms
+      5: 1000ms
+      6: 10ms
+      7: 20ms
+
+  filter:
+    type: int
+    required: false
+    default: 2
+    enum:
+      - 0 # off
+      - 1 # 2x
+      - 2 # 4x
+      - 3 # 8x
+      - 4 # 16x
+    description: |
+      IIR filter coefficient
+      0: filter off
+      1: 2
+      2: 4
+      3: 8
+      4: 16
+
+  mode:
+    type: int
+    required: false
+    default: 3
+    enum:
+      - 0 # sleep
+      - 1 # forced
+      - 3 # normal
+    description: |
+      Sensor power mode
+      0: sleep mode
+      1: forced mode
+      3: normal mode
