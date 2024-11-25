@@ -1,0 +1,32 @@
+# Copyright (c) 2023 Nordic Semiconductor ASA
+# SPDX-License-Identifier: Apache-2.0
+
+description: GPIO-based 1-Wire bus controller
+
+compatible: "w1-gpio"
+
+include: base.yaml
+
+properties:
+  gpios:
+    type: phandle-array
+    required: true
+    description: |
+      GPIO to use for the 1-Wire bus.
+      The GPIO should be configured as open-drain.
+
+  overdrive-speed:
+    type: boolean
+    required: false
+    default: false
+    description: |
+      Enable overdrive speed mode (if supported by slaves).
+      When enabled, communication runs at 8x the standard speed.
+
+  pullup-gpios:
+    type: phandle-array
+    required: false
+    description: |
+      Optional GPIO to use for external pull-up control.
+      Some implementations may want to control the pull-up
+      separately for power saving.

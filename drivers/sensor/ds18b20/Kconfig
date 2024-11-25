@@ -1,0 +1,43 @@
+# Copyright (c) 2023 Nordic Semiconductor ASA
+# SPDX-License-Identifier: Apache-2.0
+
+config DS18B20
+    bool "DS18B20 temperature sensor"
+    default y
+    depends on DT_HAS_MAXIM_DS18B20_ENABLED
+    depends on W1
+    help
+      Enable driver for DS18B20 1-Wire temperature sensor.
+
+if DS18B20
+
+config DS18B20_INIT_PRIORITY
+    int "Init priority"
+    default 90
+    help
+      Device driver initialization priority.
+      Should be higher than W1 bus driver priority.
+
+config DS18B20_LOG_LEVEL
+    int "Log level"
+    depends on LOG
+    default 1
+    range 0 4
+    help
+      Sets log level for DS18B20 driver.
+      Levels are:
+      - 0 OFF, do not write
+      - 1 ERROR, only write LOG_ERR
+      - 2 WARNING, write LOG_WRN in addition to previous level
+      - 3 INFO, write LOG_INF in addition to previous levels
+      - 4 DEBUG, write LOG_DBG in addition to previous levels
+
+config DS18B20_MAX_RETRIES
+    int "Maximum number of retries for bus operations"
+    default 3
+    range 1 10
+    help
+      Maximum number of retries for 1-Wire bus operations
+      before reporting an error.
+
+endif # DS18B20

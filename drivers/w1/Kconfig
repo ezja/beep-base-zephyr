@@ -1,0 +1,38 @@
+# Copyright (c) 2023 Nordic Semiconductor ASA
+# SPDX-License-Identifier: Apache-2.0
+
+menuconfig W1
+    bool "1-Wire drivers"
+    help
+      Enable 1-Wire drivers
+
+if W1
+
+config W1_INIT_PRIORITY
+    int "1-Wire driver init priority"
+    default 75
+    help
+      1-Wire device driver initialization priority.
+
+config W1_LOG_LEVEL
+    int "1-Wire driver log level"
+    depends on LOG
+    default 1
+    range 0 4
+    help
+      Sets log level for 1-Wire drivers.
+      Levels are:
+      - 0 OFF, do not write
+      - 1 ERROR, only write LOG_ERR
+      - 2 WARNING, write LOG_WRN in addition to previous level
+      - 3 INFO, write LOG_INF in addition to previous levels
+      - 4 DEBUG, write LOG_DBG in addition to previous levels
+
+config W1_GPIO
+    bool "GPIO 1-Wire driver"
+    default y
+    depends on GPIO
+    help
+      Enable the GPIO-based 1-Wire driver
+
+endif # W1

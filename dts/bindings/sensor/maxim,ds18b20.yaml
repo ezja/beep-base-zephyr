@@ -1,0 +1,34 @@
+# Copyright (c) 2023 Nordic Semiconductor ASA
+# SPDX-License-Identifier: Apache-2.0
+
+description: Maxim DS18B20 1-Wire temperature sensor
+
+compatible: "maxim,ds18b20"
+
+include: [sensor-device.yaml, w1-device.yaml]
+
+properties:
+  resolution:
+    type: int
+    required: false
+    default: 12
+    enum:
+      - 9
+      - 10
+      - 11
+      - 12
+    description: |
+      Temperature resolution in bits.
+      9-bit:  0.5°C resolution, 93.75ms conversion time
+      10-bit: 0.25°C resolution, 187.5ms conversion time
+      11-bit: 0.125°C resolution, 375ms conversion time
+      12-bit: 0.0625°C resolution, 750ms conversion time
+
+  serial-number:
+    type: uint8-array
+    required: true
+    size: 6
+    description: |
+      Unique 48-bit serial number of the device.
+      This can be found printed on the device or
+      discovered through a ROM search on the 1-Wire bus.
