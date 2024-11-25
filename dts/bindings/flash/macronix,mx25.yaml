@@ -1,0 +1,61 @@
+# Copyright (c) 2023 Nordic Semiconductor ASA
+# SPDX-License-Identifier: Apache-2.0
+
+description: Macronix MX25 SPI flash memory
+
+compatible: "macronix,mx25"
+
+include: [spi-device.yaml, base.yaml]
+
+properties:
+  size:
+    type: int
+    required: true
+    description: Flash memory size in bytes
+
+  sector-size:
+    type: int
+    required: true
+    default: 4096
+    description: Size of flash sectors in bytes
+
+  block-size:
+    type: int
+    required: true
+    default: 65536
+    description: Size of flash blocks in bytes
+
+  page-size:
+    type: int
+    required: true
+    default: 256
+    description: Size of flash pages in bytes
+
+  reset-gpios:
+    type: phandle-array
+    required: false
+    description: |
+      GPIO connected to the RESET pin.
+      If specified, this pin will be configured as active low.
+
+  wp-gpios:
+    type: phandle-array
+    required: false
+    description: |
+      GPIO connected to the Write Protect pin.
+      If specified, this pin will be configured as active low.
+
+  hold-gpios:
+    type: phandle-array
+    required: false
+    description: |
+      GPIO connected to the Hold pin.
+      If specified, this pin will be configured as active low.
+
+  quad-enable:
+    type: boolean
+    required: false
+    description: |
+      Enable quad SPI mode if supported by the flash chip.
+      When enabled, the driver will configure the status register
+      to enable quad mode operations.

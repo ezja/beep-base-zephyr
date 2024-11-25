@@ -1,0 +1,62 @@
+# Copyright (c) 2023 Nordic Semiconductor ASA
+# SPDX-License-Identifier: Apache-2.0
+
+description: Maxim DS3231 Real-Time Clock
+
+compatible: "maxim,ds3231"
+
+include: [i2c-device.yaml, base.yaml]
+
+properties:
+  reg:
+    required: true
+    description: I2C device address
+
+  int-gpios:
+    type: phandle-array
+    required: false
+    description: |
+      GPIO connected to the INT/SQW pin.
+      This pin is active low and is used for alarm interrupts
+      and/or square wave output.
+
+  square-wave-enable:
+    type: boolean
+    required: false
+    description: |
+      Enable square wave output on INT/SQW pin.
+      When enabled, the pin will output a square wave at
+      the frequency specified by square-wave-freq.
+      Cannot be used simultaneously with alarms.
+
+  square-wave-freq:
+    type: int
+    required: false
+    default: 1
+    enum:
+      - 1  # 1 Hz
+      - 1024  # 1.024 kHz
+      - 4096  # 4.096 kHz
+      - 8192  # 8.192 kHz
+    description: |
+      Square wave output frequency in Hz.
+      Only used when square-wave-enable is true.
+
+  battery-backup:
+    type: boolean
+    required: false
+    default: true
+    description: |
+      Enable battery backup mode.
+      When enabled, the RTC will continue to run on battery
+      power when main power is lost.
+
+  aging-offset:
+    type: int
+    required: false
+    default: 0
+    description: |
+      Aging offset value (-128 to +127).
+      Can be used to compensate for crystal aging.
+      Positive values add capacitance to the array,
+      slowing the oscillator frequency.

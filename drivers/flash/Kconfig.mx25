@@ -1,0 +1,62 @@
+# Copyright (c) 2023 Nordic Semiconductor ASA
+# SPDX-License-Identifier: Apache-2.0
+
+config MX25_FLASH
+    bool "Macronix MX25 flash driver"
+    default y
+    depends on DT_HAS_MACRONIX_MX25_ENABLED
+    select FLASH
+    select SPI
+    help
+      Enable Macronix MX25 SPI flash driver.
+
+if MX25_FLASH
+
+config MX25_FLASH_INIT_PRIORITY
+    int "Init priority"
+    default 80
+    help
+      Device driver initialization priority.
+      The driver must initialize after SPI but before
+      the application starts.
+
+config MX25_FLASH_LOG_LEVEL
+    int "Log level"
+    depends on LOG
+    default 1
+    range 0 4
+    help
+      Sets log level for MX25 flash driver.
+      Levels are:
+      - 0 OFF, do not write
+      - 1 ERROR, only write LOG_ERR
+      - 2 WARNING, write LOG_WRN in addition to previous level
+      - 3 INFO, write LOG_INF in addition to previous levels
+      - 4 DEBUG, write LOG_DBG in addition to previous levels
+
+config MX25_FLASH_VERIFY_WRITE
+    bool "Verify data after write"
+    default n
+    help
+      Enable verification of written data by reading it back
+      and comparing with the original data. This adds extra
+      overhead but ensures data integrity.
+
+config MX25_FLASH_QUAD_ENABLE
+    bool "Enable QUAD SPI mode"
+    default n
+    help
+      Enable QUAD SPI mode for faster read operations if
+      supported by the flash chip. This requires proper
+      pin configuration in the board's devicetree.
+
+config MX25_FLASH_MAX_WRITE_SIZE
+    int "Maximum write buffer size"
+    default 256
+    range 64 4096
+    help
+      Maximum size of write buffer in bytes. This affects
+      the amount of RAM used by the driver. Larger buffers
+      allow for more efficient write operations.
+
+endif # MX25_FLASH

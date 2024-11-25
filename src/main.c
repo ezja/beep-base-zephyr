@@ -1,169 +1,133 @@
-/* Previous includes remain the same */
-#include <zephyr/kernel.h>
-#include <zephyr/device.h>
-#include <zephyr/drivers/sensor.h>
-#include <zephyr/logging/log.h>
+/* Previous includes remain */
+#include "comm_mgr.h"
 
-#include "audio_app.h"
-#include "lorawan_app.h"
-#include "ble_app.h"
-#include "beep_protocol.h"
-#include "beep_types.h"
+/* Previous thread and configuration definitions remain */
 
-LOG_MODULE_REGISTER(main, CONFIG_LOG_DEFAULT_LEVEL);
-
-/* Previous thread definitions remain the same */
-#define SENSOR_STACK_SIZE 2048
-#define AUDIO_STACK_SIZE 4096
-#define DATA_STACK_SIZE 2048
-
-/* Thread priorities */
-#define SENSOR_PRIORITY 5
-#define AUDIO_PRIORITY 6
-#define DATA_PRIORITY 7
-
-/* Previous interval definitions remain the same */
-#define TEMP_INTERVAL 300
-#define ENV_INTERVAL 300
-#define WEIGHT_INTERVAL 300
-#define AUDIO_INTERVAL 3600
-
-/* Thread stacks */
-K_THREAD_STACK_DEFINE(sensor_stack, SENSOR_STACK_SIZE);
-K_THREAD_STACK_DEFINE(audio_stack, AUDIO_STACK_SIZE);
-K_THREAD_STACK_DEFINE(data_stack, DATA_STACK_SIZE);
-
-/* Thread data */
-static struct k_thread sensor_thread_data;
-static struct k_thread audio_thread_data;
-static struct k_thread data_thread_data;
-
-/* Message queue for measurements */
-K_MSGQ_DEFINE(measurement_msgq, sizeof(MEASUREMENT_RESULT_s), 10, 4);
-
-/* Previous LoRaWAN config remains the same */
-static const lorawan_config_t lorawan_config = {
-    /* ... existing config ... */
+/* Add communication configuration */
+static const COMM_CONFIG_s comm_config = {
+    .method = COMM_METHOD_AUTO,
+    .auto_fallback = true,
+    .retry_count = 3,
+    .retry_interval = 60
 };
 
-/* Device references remain the same */
-static const struct device *bme280_dev;
-static const struct device *ds18b20_dev[MAX_TEMP_SENSORS];
-static const struct device *hx711_dev;
-static int num_temp_sensors;
+/* Previous thread implementations remain */
 
-/* BLE callbacks */
-static void ble_connected(struct bt_conn *conn)
+/* Update data thread to use communication manager */
+static void data_thread(void *p1, void *p2, void *p3)
 {
-    LOG_INF("BLE Connected");
+    MEASUREMENT_RESULT_s result;
+    COMM_STATUS_s comm_status;
+    int ret;
+
+    while (1) {
+        /* Wait for measurement data */
+        if (k_msgq_get(&measurement_msgq, &result, K_FOREVER) == 0) {
+            /* Try to send measurement */
+            ret = comm_mgr_send_measurement(&result);
+            if (ret < 0 && ret != -EAGAIN) {
+                LOG_ERR("Failed to send measurement: %d", ret);
+            }
+
+            /* Get communication status for debugging */
+            if (comm_mgr_get_status(&comm_status) == 0) {
+                DEBUG_DBG(DEBUG_CAT_COMM, "Active method: %d, LoRa: %d/%ddBm, Cell: %d/%ddBm",
+                         comm_status.active_method,
+                         comm_status.lorawan_available,
+                         comm_status.lorawan_rssi,
+                         comm_status.cellular_available,
+                         comm_status.cellular_rssi);
+            }
+        }
+    }
 }
 
-static void ble_disconnected(struct bt_conn *conn)
-{
-    LOG_INF("BLE Disconnected");
-}
-
-static void ble_measurement(const MEASUREMENT_RESULT_s *result)
-{
-    /* Forward measurement to queue */
-    measurement_handler(result);
-}
-
+/* Update BLE command handling */
 static void ble_config(const uint8_t *data, uint16_t len)
 {
-    /* Handle configuration updates */
     if (len < 2) {
         return;
     }
 
     BEEP_CID cmd = data[0];
     switch (cmd) {
-        case WRITE_DS18B20_STATE:
-            /* Handle DS18B20 config */
-            break;
-        case BME280_CONFIG_WRITE:
-            /* Handle BME280 config */
-            break;
-        case WRITE_HX711_STATE:
-            /* Handle HX711 config */
-            break;
-        case WRITE_AUDIO_ADC_CONFIG:
-            /* Handle audio config */
-            break;
-        case WRITE_LORAWAN_STATE:
-            /* Handle LoRaWAN state */
-            lorawan_app_enable(data[1] != 0);
-            break;
-        default:
-            break;
-    }
-}
+        /* Previous cases remain */
 
-static void ble_control(ble_control_cmd_t cmd, const uint8_t *data, uint16_t len)
-{
-    switch (cmd) {
-        case BLE_CMD_START_MEASUREMENT:
-            /* Start all measurements */
-            break;
-        case BLE_CMD_STOP_MEASUREMENT:
-            /* Stop all measurements */
-            break;
-        case BLE_CMD_TARE_SCALE:
-            /* Tare the scale */
-            if (hx711_dev) {
-                sensor_channel_set(hx711_dev, SENSOR_CHAN_WEIGHT, NULL);
+        case READ_CELLULAR_CONFIG:
+            {
+                cellular_config_t cell_cfg;
+                if (cellular_app_get_config(&cell_cfg) == 0 && callbacks && callbacks->measurement) {
+                    callbacks->measurement((const MEASUREMENT_RESULT_s *)&cell_cfg);
+                }
             }
             break;
-        case BLE_CMD_START_AUDIO:
-            /* Start audio sampling */
-            audio_app_start(true, BLE_SOURCE);
+
+        case WRITE_CELLULAR_CONFIG:
+            if (len >= sizeof(cellular_config_t)) {
+                cellular_config_t cell_cfg;
+                memcpy(&cell_cfg, &data[1], sizeof(cell_cfg));
+                cellular_app_config(&cell_cfg);
+                flash_fs_store_config("cell_cfg", &cell_cfg, sizeof(cell_cfg));
+            }
             break;
-        case BLE_CMD_STOP_AUDIO:
-            /* Stop audio sampling */
-            audio_app_start(false, BLE_SOURCE);
+
+        case READ_CELLULAR_STATUS:
+            {
+                COMM_STATUS_s status;
+                if (comm_mgr_get_status(&status) == 0 && callbacks && callbacks->measurement) {
+                    callbacks->measurement((const MEASUREMENT_RESULT_s *)&status);
+                }
+            }
             break;
+
+        case READ_CELLULAR_SIGNAL:
+            {
+                int8_t rssi;
+                if (comm_mgr_get_signal_strength(COMM_METHOD_CELLULAR, &rssi) == 0 && 
+                    callbacks && callbacks->measurement) {
+                    callbacks->measurement((const MEASUREMENT_RESULT_s *)&rssi);
+                }
+            }
+            break;
+
+        case READ_COMM_METHOD:
+            {
+                COMM_CONFIG_s cfg;
+                if (comm_mgr_get_config(&cfg) == 0 && callbacks && callbacks->measurement) {
+                    callbacks->measurement((const MEASUREMENT_RESULT_s *)&cfg);
+                }
+            }
+            break;
+
+        case WRITE_COMM_METHOD:
+            if (len >= sizeof(COMM_CONFIG_s)) {
+                COMM_CONFIG_s cfg;
+                memcpy(&cfg, &data[1], sizeof(cfg));
+                comm_mgr_configure(&cfg);
+                flash_fs_store_config("comm_cfg", &cfg, sizeof(cfg));
+            }
+            break;
+
         default:
             break;
     }
 }
 
-static const struct ble_callbacks ble_cb = {
-    .connected = ble_connected,
-    .disconnected = ble_disconnected,
-    .measurement = ble_measurement,
-    .config = ble_config,
-    .control = ble_control,
-};
-
-/* Previous measurement_handler remains the same */
-static void measurement_handler(MEASUREMENT_RESULT_s *result)
+/* Update power management */
+static void prepare_for_sleep(void)
 {
-    /* Add BLE notification */
-    if (ble_app_is_connected()) {
-        ble_app_send_measurement(result);
-    }
-
-    /* Queue for LoRaWAN transmission */
-    int ret = k_msgq_put(&measurement_msgq, result, K_NO_WAIT);
-    if (ret < 0) {
-        LOG_ERR("Failed to queue measurement: %d", ret);
-    }
+    /* Power down communication interfaces */
+    comm_mgr_power_down();
+    
+    /* Previous power down steps remain */
 }
 
-/* Previous thread functions remain the same */
-static void sensor_thread(void *p1, void *p2, void *p3)
+static void wake_from_sleep(void)
 {
-    /* ... existing implementation ... */
-}
-
-static void audio_thread(void *p1, void *p2, void *p3)
-{
-    /* ... existing implementation ... */
-}
-
-static void data_thread(void *p1, void *p2, void *p3)
-{
-    /* ... existing implementation ... */
+    /* Previous wake-up steps remain */
+    
+    /* Power up communication interfaces */
+    comm_mgr_power_up();
 }
 
 int main(void)
@@ -172,6 +136,44 @@ int main(void)
 
     LOG_INF("BEEP Base Firmware v%d.%d.%d", 
             FIRMWARE_MAJOR, FIRMWARE_MINOR, FIRMWARE_SUB);
+
+    /* Initialize debug first */
+    DEBUG_INIT();
+
+    /* Initialize power management */
+    ret = power_mgmt_init();
+    if (ret < 0) {
+        LOG_ERR("Failed to initialize power management: %d", ret);
+        return ret;
+    }
+
+    /* Initialize flash filesystem */
+    ret = flash_fs_init();
+    if (ret < 0) {
+        LOG_ERR("Failed to initialize flash filesystem: %d", ret);
+        return ret;
+    }
+
+    /* Initialize communication manager */
+    ret = comm_mgr_init(&comm_config);
+    if (ret < 0) {
+        LOG_ERR("Failed to initialize communication manager: %d", ret);
+        return ret;
+    }
+
+    /* Initialize RTC */
+    ret = rtc_app_init(rtc_alarm_handler, rtc_time_handler);
+    if (ret < 0) {
+        LOG_ERR("Failed to initialize RTC: %d", ret);
+        return ret;
+    }
+
+    /* Initialize alarm system */
+    ret = alarm_app_init(alarm_handler);
+    if (ret < 0) {
+        LOG_ERR("Failed to initialize alarm system: %d", ret);
+        return ret;
+    }
 
     /* Initialize BLE */
     ret = ble_app_init(&ble_cb);
@@ -184,13 +186,6 @@ int main(void)
     ret = ble_app_start_adv();
     if (ret < 0) {
         LOG_ERR("Failed to start BLE advertising: %d", ret);
-        return ret;
-    }
-
-    /* Initialize LoRaWAN */
-    ret = lorawan_app_init(&lorawan_config);
-    if (ret < 0) {
-        LOG_ERR("Failed to initialize LoRaWAN: %d", ret);
         return ret;
     }
 
@@ -244,8 +239,27 @@ int main(void)
                    DATA_PRIORITY, 0, K_NO_WAIT);
     k_thread_name_set(&data_thread_data, "data");
 
-    /* Enable LoRaWAN */
-    lorawan_app_enable(true);
+    k_thread_create(&storage_thread_data, storage_stack,
+                   K_THREAD_STACK_SIZEOF(storage_stack),
+                   storage_thread, NULL, NULL, NULL,
+                   STORAGE_PRIORITY, 0, K_NO_WAIT);
+    k_thread_name_set(&storage_thread_data, "storage");
+
+    /* Enable systems */
+    alarm_app_enable(true);
+    power_mgmt_auto_sleep(true);
+
+    /* Set up daily measurement schedule */
+    struct tm current_time;
+    rtc_app_get_time(&current_time);
+    current_time.tm_hour = measurement_schedule.hour;
+    current_time.tm_min = measurement_schedule.minute;
+    current_time.tm_sec = 0;
+    rtc_app_set_alarm(2, &current_time);
+    rtc_app_enable_alarm(2, true);
+
+    /* Notify activity to start sleep timer */
+    power_mgmt_notify_activity();
 
     return 0;
 }

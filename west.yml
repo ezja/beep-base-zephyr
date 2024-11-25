@@ -1,16 +1,131 @@
 manifest:
-  version: "0.13"
+  version: "0.10"
+  
+  defaults:
+    remote: ncs
 
   remotes:
+    - name: ncs
+      url-base: https://github.com/nrfconnect
     - name: zephyrproject
       url-base: https://github.com/zephyrproject-rtos
 
   projects:
-    - name: zephyr
-      remote: zephyrproject
-      revision: main
+    - name: nrf
+      repo-path: sdk-nrf
+      remote: ncs
+      revision: v2.4.0
       import: true
+      path: nrf
+      
+    - name: zephyr
+      repo-path: zephyr
+      remote: zephyrproject
+      revision: v3.4.0
+      import: true
+      path: zephyr
+      
+    - name: mcuboot
+      repo-path: mcuboot
+      remote: ncs
+      revision: v2.4.0
+      path: bootloader/mcuboot
+      
+    - name: nrfxlib
+      repo-path: nrfxlib
+      remote: ncs
+      revision: v2.4.0
+      path: nrfxlib
+      
+    - name: trusted-firmware-m
+      repo-path: trusted-firmware-m
+      remote: ncs
+      revision: v2.4.0
+      path: modules/tee/tf-m/trusted-firmware-m
 
   self:
-    path: app
-  
+    path: beep-base-zephyr
+    west-commands: scripts/west-commands.yml
+    
+  group-filter: [-ci-experimental, -optional]
+
+config:
+  nrf_modem_lib:
+    version: "2.4.0"
+    path: nrf/lib/nrf_modem_lib
+    
+  nrf_security:
+    version: "2.4.0"
+    path: nrf/subsys/nrf_security
+    
+  nrf_802154_radio_driver:
+    version: "2.4.0"
+    path: nrf/drivers/net/nrf_802154_radio_driver
+    
+  nrf_modem_trace:
+    version: "2.4.0"
+    path: nrf/lib/nrf_modem_lib/trace
+    
+  nrf_modem_at:
+    version: "2.4.0"
+    path: nrf/lib/nrf_modem_lib/at
+    
+  nrf_modem_gnss:
+    version: "2.4.0"
+    path: nrf/lib/nrf_modem_lib/gnss
+    
+  nrf_modem_shmem:
+    version: "2.4.0"
+    path: nrf/lib/nrf_modem_lib/shmem
+
+  # Additional configurations for modem features
+  nrf_modem_lib_trace:
+    enabled: true
+    level: 4
+    medium: uart
+    
+  nrf_modem_lib_shmem:
+    enabled: true
+    trace: true
+    
+  nrf_modem_lib_at:
+    enabled: true
+    log_level: 4
+    
+  nrf_modem_lib_gnss:
+    enabled: false
+    
+  # Security configurations
+  nrf_security:
+    enabled: true
+    psa_crypto: true
+    mbedtls: true
+    
+  # Network configurations
+  net_config:
+    init_timeout: 30
+    
+  # Debug configurations
+  debug:
+    thread_analyzer: true
+    stack_sentinel: true
+    
+  # Power management configurations
+  pm:
+    device: true
+    device_runtime: true
+    device_runtime_auto: true
+    
+  # Build configurations
+  build:
+    use_ccache: true
+    thread_analyzer: true
+    size_report: true
+    
+  # Test configurations
+  test:
+    enable: false
+    
+  # Documentation configurations
+  doc:
+    enable: false

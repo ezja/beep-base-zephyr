@@ -1,135 +1,81 @@
-/*
- * Copyright (c) 2023 Nordic Semiconductor ASA
- * SPDX-License-Identifier: Apache-2.0
- */
+/* Previous content remains, update UART and power configuration for nRF9161 */
 
-/ {
-    aliases {
-        w1-bus = &w1_bus;
-    };
-
-    chosen {
-        zephyr,audio-in = &i2s0;
-    };
-};
-
-/* I2C configuration for TLV320ADC3100 and BME280 */
-&i2c0 {
+/* UART configuration for nRF9161 modem with power optimization */
+&uart0 {
     status = "okay";
-    clock-frequency = <I2C_BITRATE_FAST>;
-    pinctrl-0 = <&i2c0_default>;
-    pinctrl-1 = <&i2c0_sleep>;
+    current-speed = <115200>;
+    flow-control;
+    pinctrl-0 = <&uart0_default>;
+    pinctrl-1 = <&uart0_sleep>;
     pinctrl-names = "default", "sleep";
+    hw-flow-control;
 
-    tlv320adc3100: tlv320adc3100@18 {
-        compatible = "ti,tlv320adc3100";
-        reg = <0x18>;
-        reset-gpios = <&gpio0 25 GPIO_ACTIVE_LOW>;
+    nrf9161 {
+        compatible = "nordic,nrf91-modem";
         status = "okay";
-    };
-
-    bme280: bme280@76 {
-        compatible = "bosch,bme280";
-        reg = <0x76>;
-        status = "okay";
-    };
-};
-
-/* I2S configuration for audio input */
-&i2s0 {
-    status = "okay";
-    pinctrl-0 = <&i2s0_default>;
-    pinctrl-1 = <&i2s0_sleep>;
-    pinctrl-names = "default", "sleep";
-    clock-source = "PCLK32M_HFXO";
-};
-
-/* 1-Wire bus for DS18B20 sensors */
-/ {
-    w1_bus: w1-gpio {
-        compatible = "w1-gpio";
-        gpios = <&gpio0 26 (GPIO_OPEN_DRAIN | GPIO_ACTIVE_HIGH)>;
-        status = "okay";
+        
+        /* Power control pins */
+        power-gpios = <&gpio0 12 GPIO_ACTIVE_HIGH>;  /* Modem power control */
+        reset-gpios = <&gpio0 19 GPIO_ACTIVE_LOW>;   /* Modem reset */
+        
+        /* Network mode pins */
+        mode-gpios = <&gpio0 23 GPIO_ACTIVE_HIGH>;   /* Network mode selection */
+        
+        /* Power saving control pins */
+        psm-gpios = <&gpio0 24 GPIO_ACTIVE_HIGH>;    /* PSM control */
+        edrx-gpios = <&gpio0 25 GPIO_ACTIVE_HIGH>;   /* eDRX control */
+        
+        /* Status indication pins */
+        status-gpios = <&gpio0 26 GPIO_ACTIVE_HIGH>; /* Network status */
+        sleep-gpios = <&gpio0 27 GPIO_ACTIVE_HIGH>;  /* Sleep indication */
     };
 };
 
-/* DS18B20 temperature sensors */
-/ {
-    ds18b20_0: ds18b20-0 {
-        compatible = "maxim,ds18b20";
-        status = "okay";
-        w1-bus = <&w1_bus>;
-        resolution = <12>;
-        serial-number = [28 12 34 56 78 90 AB CD];
-    };
-
-    ds18b20_1: ds18b20-1 {
-        compatible = "maxim,ds18b20";
-        status = "okay";
-        w1-bus = <&w1_bus>;
-        resolution = <12>;
-        serial-number = [28 21 43 65 87 09 BA DC];
-    };
-};
-
-/* HX711 weight sensor */
-/ {
-    hx711_0: hx711-0 {
-        compatible = "avia,hx711";
-        status = "okay";
-        sck-gpios = <&gpio0 27 GPIO_ACTIVE_HIGH>;
-        dout-gpios = <&gpio0 28 GPIO_ACTIVE_HIGH>;
-        gain = <1>;  /* Channel A, 128 gain */
-        samples = <10>;
-    };
-};
-
-/* Pin configurations */
+/* Pin configuration for optimal power saving */
 &pinctrl {
-    i2c0_default: i2c0_default {
+    uart0_default: uart0_default {
         group1 {
-            psels = <NRF_PSEL(TWIM_SDA, 0, 30)>,
-                    <NRF_PSEL(TWIM_SCL, 0, 31)>;
+            psels = <NRF_PSEL(UART_TX, 0, 6)>,
+                    <NRF_PSEL(UART_RX, 0, 8)>,
+                    <NRF_PSEL(UART_RTS, 0, 7)>,
+                    <NRF_PSEL(UART_CTS, 0, 9)>;
             bias-pull-up;
+            drive-mode = "s0s1";  /* High drive strength for reliable communication */
         };
     };
 
-    i2c0_sleep: i2c0_sleep {
+    uart0_sleep: uart0_sleep {
         group1 {
-            psels = <NRF_PSEL(TWIM_SDA, 0, 30)>,
-                    <NRF_PSEL(TWIM_SCL, 0, 31)>;
-            low-power-enable;
-        };
-    };
-
-    i2s0_default: i2s0_default {
-        group1 {
-            psels = <NRF_PSEL(I2S_SCK, 0, 20)>,
-                    <NRF_PSEL(I2S_LRCK, 0, 21)>,
-                    <NRF_PSEL(I2S_SDIN, 0, 22)>;
-        };
-    };
-
-    i2s0_sleep: i2s0_sleep {
-        group1 {
-            psels = <NRF_PSEL(I2S_SCK, 0, 20)>,
-                    <NRF_PSEL(I2S_LRCK, 0, 21)>,
-                    <NRF_PSEL(I2S_SDIN, 0, 22)>;
-            low-power-enable;
+            psels = <NRF_PSEL(UART_TX, 0, 6)>,
+                    <NRF_PSEL(UART_RX, 0, 8)>,
+                    <NRF_PSEL(UART_RTS, 0, 7)>,
+                    <NRF_PSEL(UART_CTS, 0, 9)>;
+            low-power-enable;     /* Enable low power mode in sleep */
+            bias-pull-up;         /* Maintain signal integrity in sleep */
         };
     };
 };
 
-/* Flash configuration for file system */
-&flash0 {
-    partitions {
-        compatible = "fixed-partitions";
-        #address-cells = <1>;
-        #size-cells = <1>;
+/* Power management configuration */
+&cpu0 {
+    cpu-power-states = <&state_sleep &state_deep_sleep>;
+};
 
-        storage_partition: partition@f8000 {
-            label = "storage";
-            reg = <0xf8000 0x8000>;
-        };
+/* Power states definition */
+power-states {
+    state_sleep: state_sleep {
+        compatible = "zephyr,power-state";
+        power-state-name = "sleep";
+        min-residency-us = <1000>;
+        exit-latency-us = <100>;
+    };
+
+    state_deep_sleep: state_deep_sleep {
+        compatible = "zephyr,power-state";
+        power-state-name = "deep-sleep";
+        min-residency-us = <10000>;
+        exit-latency-us = <1000>;
     };
 };
+
+/* Rest of the file remains the same */

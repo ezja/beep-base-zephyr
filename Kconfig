@@ -1,0 +1,144 @@
+# Cellular Application Configuration
+
+menuconfig CELLULAR_APP
+    bool "Cellular Application Support"
+    default y
+    select NRF_MODEM_LIB
+    select LTE_LINK_CONTROL
+    help
+        Enable cellular application support with nRF9161 modem
+
+if CELLULAR_APP
+
+config CELLULAR_PSM_ENABLE
+    bool "Enable Power Saving Mode (PSM)"
+    default y
+    help
+        Enable PSM for power optimization
+
+config CELLULAR_PSM_TAU_SEC
+    int "PSM TAU interval in seconds"
+    default 43200
+    depends on CELLULAR_PSM_ENABLE
+    help
+        Tracking Area Update interval for PSM
+
+config CELLULAR_PSM_ACTIVE_SEC
+    int "PSM active time in seconds"
+    default 60
+    depends on CELLULAR_PSM_ENABLE
+    help
+        Active time before entering PSM
+
+config CELLULAR_EDRX_ENABLE
+    bool "Enable Extended DRX (eDRX)"
+    default y
+    help
+        Enable eDRX for power optimization
+
+config CELLULAR_EDRX_CYCLE
+    int "eDRX cycle length"
+    default 5
+    range 0 15
+    depends on CELLULAR_EDRX_ENABLE
+    help
+        eDRX cycle length (0-15, maps to actual timing)
+
+config CELLULAR_RAI_ENABLE
+    bool "Enable Release Assistance Indication"
+    default y
+    help
+        Enable RAI for connection optimization
+
+config CELLULAR_WRITE_BUFFER_SIZE
+    int "Write buffer size in bytes"
+    default 4096
+    range 512 16384
+    help
+        Size of write buffer for flash operations
+
+config CELLULAR_WRITE_BUFFER_TIMEOUT_MS
+    int "Write buffer flush timeout in milliseconds"
+    default 100
+    range 10 1000
+    help
+        Timeout before flushing write buffer
+
+config CELLULAR_WEAR_LEVELING
+    bool "Enable flash wear leveling"
+    default y
+    help
+        Enable wear leveling for flash writes
+
+config CELLULAR_AUTO_CALIBRATION
+    bool "Enable automatic sensor calibration"
+    default y
+    help
+        Enable automatic temperature calibration
+
+config CELLULAR_CAL_INTERVAL_HOURS
+    int "Calibration interval in hours"
+    default 24
+    range 1 168
+    depends on CELLULAR_AUTO_CALIBRATION
+    help
+        Interval between automatic calibrations
+
+config CELLULAR_WAKEUP_OPTIMIZATION
+    bool "Enable wake-up optimization"
+    default y
+    help
+        Enable optimization of PSM wake-up timing
+
+config CELLULAR_MIN_WAKEUP_LATENCY_MS
+    int "Minimum wake-up latency in milliseconds"
+    default 100
+    range 10 1000
+    depends on CELLULAR_WAKEUP_OPTIMIZATION
+    help
+        Minimum acceptable wake-up latency
+
+config CELLULAR_MAX_WAKEUP_RETRIES
+    int "Maximum wake-up optimization retries"
+    default 3
+    range 1 10
+    depends on CELLULAR_WAKEUP_OPTIMIZATION
+    help
+        Maximum attempts to optimize wake-up timing
+
+config CELLULAR_SYNC_TIMEOUT_MS
+    int "Thread synchronization timeout in milliseconds"
+    default 1000
+    range 100 5000
+    help
+        Timeout for thread synchronization operations
+
+config CELLULAR_MAX_SYNC_RETRIES
+    int "Maximum synchronization retries"
+    default 3
+    range 1 10
+    help
+        Maximum attempts for synchronization operations
+
+config CELLULAR_PRIORITY_INHERITANCE
+    bool "Enable priority inheritance"
+    default y
+    help
+        Enable priority inheritance for mutexes
+
+config CELLULAR_DEBUG_LOGGING
+    bool "Enable debug logging"
+    default n
+    help
+        Enable detailed debug logging
+
+config CELLULAR_STATS_TRACKING
+    bool "Enable statistics tracking"
+    default y
+    help
+        Enable tracking of operational statistics
+
+endif # CELLULAR_APP
+
+# Dependencies
+source "Kconfig.zephyr"

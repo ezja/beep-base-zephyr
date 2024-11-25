@@ -1,0 +1,76 @@
+# Copyright (c) 2023 Nordic Semiconductor ASA
+# SPDX-License-Identifier: Apache-2.0
+
+config DS3231_RTC
+    bool "DS3231 RTC driver"
+    default y
+    depends on DT_HAS_MAXIM_DS3231_ENABLED
+    select I2C
+    help
+      Enable driver for DS3231 Real-Time Clock.
+
+if DS3231_RTC
+
+config DS3231_RTC_INIT_PRIORITY
+    int "Init priority"
+    default 80
+    help
+      Device driver initialization priority.
+      The driver must initialize after I2C but before
+      the application starts.
+
+config DS3231_RTC_LOG_LEVEL
+    int "Log level"
+    depends on LOG
+    default 1
+    range 0 4
+    help
+      Sets log level for DS3231 RTC driver.
+      Levels are:
+      - 0 OFF, do not write
+      - 1 ERROR, only write LOG_ERR
+      - 2 WARNING, write LOG_WRN in addition to previous level
+      - 3 INFO, write LOG_INF in addition to previous levels
+      - 4 DEBUG, write LOG_DBG in addition to previous levels
+
+config DS3231_RTC_ALARM_SUPPORT
+    bool "Enable alarm support"
+    default y
+    help
+      Enable support for alarms in the DS3231 RTC driver.
+      This allows setting alarms and receiving interrupts
+      when alarms trigger.
+
+config DS3231_RTC_SQUARE_WAVE_SUPPORT
+    bool "Enable square wave output support"
+    default n
+    help
+      Enable support for square wave output on the INT/SQW pin.
+      This allows configuring the DS3231 to output a square
+      wave at various frequencies.
+
+config DS3231_RTC_AGING_COMPENSATION
+    bool "Enable aging compensation"
+    default n
+    help
+      Enable support for aging compensation.
+      This allows adjusting the oscillator frequency to
+      compensate for crystal aging.
+
+config DS3231_RTC_TEMP_COMPENSATION
+    bool "Enable temperature compensation"
+    default y
+    help
+      Enable temperature compensation support.
+      The DS3231 includes an integrated temperature sensor
+      that is used to maintain accuracy over temperature.
+
+config DS3231_RTC_BATTERY_BACKUP
+    bool "Enable battery backup"
+    default y
+    help
+      Enable battery backup support.
+      When enabled, the RTC will continue to run on battery
+      power when main power is lost.
+
+endif # DS3231_RTC

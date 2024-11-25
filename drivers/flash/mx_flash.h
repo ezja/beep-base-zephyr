@@ -140,3 +140,6 @@ int mx_flash_power_down(const struct device *dev);
  * @param dev Pointer to device structure
  * @return 0 on success, negative errno code on failure
  */
+int mx_flash_power_up(const struct device *dev);
+
+#endif /* ZEPHYR_DRIVERS_FLASH_MX_FLASH_H_ */
