@@ -1,0 +1,59 @@
+# Copyright (c) 2023 Nordic Semiconductor ASA
+# SPDX-License-Identifier: Apache-2.0
+
+description: HX711 24-bit ADC for weight scales
+
+compatible: "avia,hx711"
+
+include: [sensor-device.yaml, base.yaml]
+
+properties:
+  sck-gpios:
+    type: phandle-array
+    required: true
+    description: Serial clock GPIO pin
+
+  dout-gpios:
+    type: phandle-array
+    required: true
+    description: Data output GPIO pin
+
+  gain:
+    type: int
+    required: false
+    default: 1
+    enum:
+      - 1  # Channel A, gain 128
+      - 2  # Channel B, gain 32
+      - 3  # Channel A, gain 64
+    description: |
+      Default gain and channel setting
+      1: Channel A with gain of 128
+      2: Channel B with gain of 32
+      3: Channel A with gain of 64
+
+  samples:
+    type: int
+    required: false
+    default: 1
+    description: |
+      Number of samples to average for each reading.
+      Higher values provide more stable readings but
+      slower response time.
+
+  offset:
+    type: int
+    required: false
+    default: 0
+    description: |
+      Initial tare offset value.
+      This value is subtracted from raw readings.
+
+  scale:
+    type: int
+    required: false
+    default: 65536  # 1.0 in Q16.16 format
+    description: |
+      Initial scale factor in Q16.16 fixed-point format.
+      Raw readings are multiplied by this value after
+      offset subtraction. Default is 1.0 (65536 in Q16.16).

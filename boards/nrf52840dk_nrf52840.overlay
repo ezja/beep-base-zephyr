@@ -1,8 +1,11 @@
+/*
+ * Copyright (c) 2023 Nordic Semiconductor ASA
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 / {
     aliases {
-        tlv320adc3100 = &tlv320adc3100;
-        bme280 = &bme280;
-        hx711 = &hx711;
+        w1-bus = &w1_bus;
     };
 
     chosen {
@@ -10,65 +13,62 @@
     };
 };
 
-&pinctrl {
-    i2s0_default: i2s0_default {
-        group1 {
-            psels = <NRF_PSEL(I2S_SCK, 0, 26)>,
-                    <NRF_PSEL(I2S_LRCK, 0, 27)>,
-                    <NRF_PSEL(I2S_SDIN, 0, 28)>,
-                    <NRF_PSEL(I2S_SDOUT, 0, 29)>;
-        };
+/* I2C configuration for TLV320ADC3100 and BME280 */
+&i2c0 {
+    status = "okay";
+    clock-frequency = <I2C_BITRATE_FAST>;
+    pinctrl-0 = <&i2c0_default>;
+    pinctrl-1 = <&i2c0_sleep>;
+    pinctrl-names = "default", "sleep";
+
+    tlv320adc3100: tlv320adc3100@18 {
+        compatible = "ti,tlv320adc3100";
+        reg = <0x18>;
+        reset-gpios = <&gpio0 25 GPIO_ACTIVE_LOW>;
+        status = "okay";
     };
 
-    i2s0_sleep: i2s0_sleep {
-        group1 {
-            psels = <NRF_PSEL(I2S_SCK, 0, 26)>,
-                    <NRF_PSEL(I2S_LRCK, 0, 27)>,
-                    <NRF_PSEL(I2S_SDIN, 0, 28)>,
-                    <NRF_PSEL(I2S_SDOUT, 0, 29)>;
-            low-power-enable;
-        };
-    };
-
-    i2c0_default: i2c0_default {
-        group1 {
-            psels = <NRF_PSEL(TWIM_SDA, 0, 30)>,
-                    <NRF_PSEL(TWIM_SCL, 0, 31)>;
-        };
-    };
-
-    i2c0_sleep: i2c0_sleep {
-        group1 {
-            psels = <NRF_PSEL(TWIM_SDA, 0, 30)>,
-                    <NRF_PSEL(TWIM_SCL, 0, 31)>;
-            low-power-enable;
-        };
-    };
-
-    spi1_default: spi1_default {
-        group1 {
-            psels = <NRF_PSEL(SPIM_SCK, 0, 20)>,
-                    <NRF_PSEL(SPIM_MOSI, 0, 21)>,
-                    <NRF_PSEL(SPIM_MISO, 0, 22)>;
-        };
-    };
-
-    spi1_sleep: spi1_sleep {
-        group1 {
-            psels = <NRF_PSEL(SPIM_SCK, 0, 20)>,
-                    <NRF_PSEL(SPIM_MOSI, 0, 21)>,
-                    <NRF_PSEL(SPIM_MISO, 0, 22)>;
-            low-power-enable;
-        };
+    bme280: bme280@76 {
+        compatible = "bosch,bme280";
+        reg = <0x76>;
+        status = "okay";
     };
 };
 
+/* I2S configuration for audio input */
 &i2s0 {
     status = "okay";
     pinctrl-0 = <&i2s0_default>;
     pinctrl-1 = <&i2s0_sleep>;
     pinctrl-names = "default", "sleep";
     clock-source = "PCLK32M_HFXO";
+};
+
+/* 1-Wire bus for DS18B20 sensors */
+/ {
+    w1_bus: w1-gpio {
+        compatible = "w1-gpio";
+        gpios = <&gpio0 26 (GPIO_OPEN_DRAIN | GPIO_ACTIVE_HIGH)>;
+        status = "okay";
+    };
+};
+
+/* DS18B20 temperature sensors */
+/ {
+    ds18b20_0: ds18b20-0 {
+        compatible = "maxim,ds18b20";
+        status = "okay";
+        w1-bus = <&w1_bus>;
+        resolution = <12>;
+        serial-number = [28 12 34 56 78 90 AB CD];
+    };
+
+    ds18b20_1: ds18b20-1 {
+        compatible = "maxim,ds18b20";
+        status = "okay";
+        w1-bus = <&w1_bus>;
+        resolution = <12>;
+        serial-number = [28 21 43 65 87 09 BA DC];
 };
 
 &i2c0 {

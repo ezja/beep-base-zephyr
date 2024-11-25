@@ -1,0 +1,64 @@
+# Copyright (c) 2023 Nordic Semiconductor ASA
+# SPDX-License-Identifier: Apache-2.0
+
+config HX711
+    bool "HX711 weight sensor"
+    default y
+    depends on DT_HAS_AVIA_HX711_ENABLED
+    depends on GPIO
+    help
+      Enable driver for HX711 24-bit ADC weight sensor.
+
+if HX711
+
+config HX711_INIT_PRIORITY
+    int "Init priority"
+    default 90
+    help
+      Device driver initialization priority.
+
+config HX711_LOG_LEVEL
+    int "Log level"
+    depends on LOG
+    default 1
+    range 0 4
+    help
+      Sets log level for HX711 driver.
+      Levels are:
+      - 0 OFF, do not write
+      - 1 ERROR, only write LOG_ERR
+      - 2 WARNING, write LOG_WRN in addition to previous level
+      - 3 INFO, write LOG_INF in addition to previous levels
+      - 4 DEBUG, write LOG_DBG in addition to previous levels
+
+config HX711_TRIGGER_ENABLED
+    bool "Enable trigger mode"
+    depends on GPIO
+    help
+      Enable trigger mode support for HX711.
+      When enabled, the driver can notify when new data
+      is ready using GPIO interrupt.
+
+config HX711_TRIGGER_GLOBAL_THREAD
+    bool "Use global thread for triggers"
+    depends on HX711_TRIGGER_ENABLED
+    default y
+    help
+      Use global thread for handling all HX711 triggers.
+      Disable to use separate thread for each device.
+
+config HX711_TRIGGER_THREAD_STACK_SIZE
+    int "Trigger thread stack size"
+    depends on HX711_TRIGGER_ENABLED
+    default 1024
+    help
+      Stack size for trigger thread.
+
+config HX711_TRIGGER_THREAD_PRIO
+    int "Trigger thread priority"
+    depends on HX711_TRIGGER_ENABLED
+    default 10
+    help
+      Priority of trigger thread.
+
+endif # HX711
